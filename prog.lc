@@ -1,0 +1,15 @@
+bot = bot
+id x = x
+const _ = x
+A = \a . a
+B = \b . b
+true x y = x
+false x y = y
+if c t f = c t f
+pair h t p = p false h t
+null p = p true id id
+null? p = p (\n h t . n)
+head p = p (\n h t . h)
+tail p = p (\n h t . t)
+filter p xs = if (p (head xs)) (pair (head xs) (filter p (tail xs))) (filter p (tail xs))
+map f xs = if (null? xs) null (pair (f (head xs)) (map f (tail xs)))

@@ -119,16 +119,31 @@ readForm input = case parse parseForm "lambda" input of
     Right f -> Right f
 
 exec :: String -> Env -> IO Env
-exec line env = case readForm line of
-    Left (SyntaxError e) -> do
-        putStrLn $ show e
-        return env
-    Right f -> do
-        let (res, env') = eval f `runState` env
-        case res of
-            Left e -> putStrLn $ show e
-            Right f -> putStrLn $ show f
-        return env'
+exec line env
+    | take 3 line == ":i " = importFile (drop 3 line) env
+    | otherwise = case readForm line of
+        Left (SyntaxError e) -> do
+            putStrLn $ show e
+            return env
+        Right f -> do
+            let (res, env') = eval f `runState` env
+            case res of
+                Left e -> putStrLn $ show e
+                Right f -> putStrLn $ show f
+            return env'
+
+execAll :: [String] -> Env -> Env
+execAll lines env = foldl exec env lines where
+  exec env line = case readForm line of
+    (Left err) -> env
+    (Right form) -> snd $ eval form `runState` env
+
+importFile :: String -> Env -> IO Env
+importFile filename env = do
+  putStrLn $ "Importing from " ++ filename
+  contents <- readFile filename
+  let exprs = lines contents
+  return $ execAll exprs env
 
 main :: IO ()
 main = do
