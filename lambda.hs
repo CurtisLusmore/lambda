@@ -33,11 +33,17 @@ evalAtom a = state $ \e -> (reference a e, e) where
 evalLambda :: Atom -> Form -> Prog (Failable Form)
 evalLambda x y = return $ Right $ Lambda x y
 
+betaReduce :: Atom -> Form -> Form -> Form
+betaReduce b b' (Atom a)
+  | a == b    = b'
+  | otherwise = Atom a
+betaReduce b b' (Lambda x y)
+  | b == x    = Lambda x y
+  | otherwise = Lambda x $ betaReduce b b' y
+betaReduce b b' (Apply f x) = Apply (betaReduce b b' f) (betaReduce b b' x)
+
 applyLambda :: Form -> Form -> Prog (Failable Form)
-applyLambda (Lambda x' y') x = state $ \e ->
-    let exec f e = fst $ (return $ Right f) `runState` e
-        e' = (x',y'):e
-    in (exec x e', e)
+applyLambda (Lambda x y) x' = eval $ betaReduce x x' y
 
 evalApply :: Form -> Form -> Prog (Failable Form)
 evalApply f x = do
