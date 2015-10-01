@@ -1,4 +1,6 @@
 import Control.Monad.State
+import System.IO (hFlush, stdout)
+import Text.Parsec hiding (State)
 
 type Atom = String
 
@@ -15,7 +17,7 @@ type Env = [(Atom, Form)]
 
 type Prog = State Env
 
-data Error = SyntaxError String
+data Error = SyntaxError ParseError
            | UnknownAtom Atom
            | FatalError String
            deriving (Show)
@@ -48,3 +50,67 @@ eval :: Form -> Prog (Failable Form)
 eval (Atom a)     = evalAtom a
 eval (Lambda x y) = evalLambda x y
 eval (Apply f x)  = evalApply f x
+
+type Parser = Parsec String ()
+
+symbol :: Parser Char
+symbol = oneOf "`~!@#$%^&*-_+|;:',/?[]<>"
+
+identifier :: Parser String
+identifier = many1 $ letter <|> symbol <|> digit
+
+parseAtom :: Parser Form
+parseAtom = liftM Atom $ identifier
+
+parseLambda :: Parser Form
+parseLambda = do
+    char '\\'
+    x <- identifier
+    spaces
+    char '.'
+    spaces
+    y <- parseForm
+    return $ Lambda x y
+
+parseApply :: Parser Form
+parseApply = do
+    char '('
+    f <- parseForm
+    spaces
+    x <- parseForm
+    char ')'
+    return $ Apply f x
+
+parseForm :: Parser Form
+parseForm = parseAtom
+        <|> parseLambda
+        <|> parseApply
+
+readForm :: String -> Failable Form
+readForm input = case parse parseForm "lambda" input of
+    Left e -> Left $ SyntaxError e
+    Right f -> Right f
+
+exec :: String -> Env -> IO Env
+exec line env = case readForm line of
+    Left (SyntaxError e) -> do
+        putStrLn $ show e
+        return env
+    Right f -> do
+        let (res, env') = eval f `runState` env
+        case res of
+            Left e -> putStrLn $ show e
+            Right f -> putStrLn $ show f
+        return env'
+
+main :: IO ()
+main = do
+    repl [] where
+        repl env = do
+            prompt "> "
+            line <- getLine
+            env' <- exec line env
+            repl env'
+        prompt s = do
+            putStr s
+            hFlush stdout
