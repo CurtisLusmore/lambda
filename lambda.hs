@@ -71,12 +71,13 @@ parseAtom = liftM Atom $ identifier
 parseLambda :: Parser Form
 parseLambda = do
     char '\\'
-    x <- identifier
-    spaces
+    xs <- identifier `endBy1` spaces
     char '.'
     spaces
     y <- parseForm
-    return $ Lambda x y
+    return $ curry xs y where
+        curry (x:xs) y = Lambda x $ curry xs y
+        curry [] y     = y
 
 parseApply :: Parser Form
 parseApply = do
