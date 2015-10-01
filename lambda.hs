@@ -81,17 +81,19 @@ parseLambda = do
 
 parseApply :: Parser Form
 parseApply = do
-    char '('
-    f <- parseForm
-    spaces
-    x <- parseForm
-    char ')'
-    return $ Apply f x
+    fs <- parseTerm `sepBy1` spaces
+    return $ foldl1 Apply fs
+
+parseParen :: Parser Form
+parseParen = between (char '(') (char ')') parseForm
+
+parseTerm :: Parser Form
+parseTerm = parseAtom
+        <|> parseLambda
+        <|> parseParen
 
 parseForm :: Parser Form
-parseForm = parseAtom
-        <|> parseLambda
-        <|> parseApply
+parseForm = parseApply
 
 readForm :: String -> Failable Form
 readForm input = case parse parseForm "lambda" input of
