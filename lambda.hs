@@ -91,12 +91,15 @@ parseApply = do
 
 parseAssign :: Parser Form
 parseAssign = do
-    x <- identifier
+    f <- identifier
     spaces
+    xs <- identifier `endBy` spaces
     char '='
     spaces
     y <- parseForm
-    return $ Assign x y
+    return $ Assign f $ curry xs y where
+        curry (x:xs) y = Lambda x $ curry xs y
+        curry [] y     = y
 
 parseParen :: Parser Form
 parseParen = between (char '(') (char ')') parseForm
