@@ -7,6 +7,7 @@ type Atom = String
 data Form = Atom Atom
           | Lambda Atom Form
           | Apply Form Form
+          | Assign Atom Form
 
 instance Show Form where
     show (Atom a) = a
@@ -52,10 +53,14 @@ evalApply f x = do
         Left e    -> return $ Left e
         Right f'' -> applyLambda f'' x
 
+evalAssign :: Atom -> Form -> Prog (Failable Form)
+evalAssign x y = state (\e -> (Right y, (x, y):e))
+
 eval :: Form -> Prog (Failable Form)
 eval (Atom a)     = evalAtom a
 eval (Lambda x y) = evalLambda x y
 eval (Apply f x)  = evalApply f x
+eval (Assign x y) = evalAssign x y
 
 type Parser = Parsec String ()
 
@@ -84,6 +89,15 @@ parseApply = do
     fs <- parseTerm `sepBy1` spaces
     return $ foldl1 Apply fs
 
+parseAssign :: Parser Form
+parseAssign = do
+    x <- identifier
+    spaces
+    char '='
+    spaces
+    y <- parseForm
+    return $ Assign x y
+
 parseParen :: Parser Form
 parseParen = between (char '(') (char ')') parseForm
 
@@ -93,7 +107,8 @@ parseTerm = parseAtom
         <|> parseParen
 
 parseForm :: Parser Form
-parseForm = parseApply
+parseForm = try parseAssign
+        <|> parseApply
 
 readForm :: String -> Failable Form
 readForm input = case parse parseForm "lambda" input of
