@@ -54,7 +54,13 @@ evalApply f x = do
         Right f'' -> applyLambda f'' x
 
 evalAssign :: Atom -> Form -> Prog (Failable Form)
-evalAssign x y = state (\e -> (Right y, (x, y):e))
+evalAssign x y = do
+    y' <- eval y
+    case y' of
+        Left e -> return $ Left e
+        Right f -> do
+            modify ((x, f):)
+            return $ Right f
 
 eval :: Form -> Prog (Failable Form)
 eval (Atom a)     = evalAtom a
