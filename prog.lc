@@ -14,5 +14,10 @@ null? p = p (\n h t . n)
 head p = p (\n h t . h)
 tail p = p (\n h t . t)
 
-filter p xs = if (null? xs) null (if (p (head xs)) (pair (head xs) (filter p (tail xs))) (filter p (tail xs)))
+zero = \f . id
+zero? n = n (const false) true
+succ n = \f . \x . f (n f x)
+
 map f xs = if (null? xs) null (pair (f (head xs)) (map f (tail xs)))
+filter p xs = if (null? xs) null (if (p (head xs)) (pair (head xs) (filter p (tail xs))) (filter p (tail xs)))
+foldl f x xs = if (null? xs) x (foldl f (f x (head xs)) (tail xs))

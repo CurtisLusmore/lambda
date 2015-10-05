@@ -36,11 +36,11 @@ evalLambda x y = return $ Right $ Lambda x y
 
 betaReduce :: Atom -> Form -> Form -> Form
 betaReduce b b' (Atom a)
-  | a == b    = b'
-  | otherwise = Atom a
+    | a == b    = b'
+    | otherwise = Atom a
 betaReduce b b' (Lambda x y)
-  | b == x    = Lambda x y
-  | otherwise = Lambda x $ betaReduce b b' y
+    | b == x    = Lambda x y
+    | otherwise = Lambda x $ betaReduce b b' y
 betaReduce b b' (Apply f x) = Apply (betaReduce b b' f) (betaReduce b b' x)
 
 applyLambda :: Form -> Form -> Prog (Failable Form)
@@ -140,16 +140,16 @@ exec line env
 
 execAll :: [String] -> Env -> Env
 execAll lines env = foldl exec env lines where
-  exec env line = case readForm line of
-    (Left err) -> env
-    (Right form) -> snd $ eval form `runState` env
+    exec env line = case readForm line of
+        (Left err) -> env
+        (Right form) -> snd $ eval form `runState` env
 
 importFile :: String -> Env -> IO Env
 importFile filename env = do
-  putStrLn $ "Importing from " ++ filename
-  contents <- readFile filename
-  let exprs = lines contents
-  return $ execAll exprs env
+    putStrLn $ "Importing from " ++ filename
+    contents <- readFile filename
+    let exprs = lines contents
+    return $ execAll exprs env
 
 main :: IO ()
 main = do
